@@ -8,19 +8,22 @@ from synthetic_data_generator import synthetic_data_gen
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 PATH = './lstm_ae_net.pth'
-sequences = 10000
-t = 50
-batch_size = 2
-epoch = 10
+sequence_param = 50
+batch_size = 30
+epoch = 50
+grad_clip = 1
+learning_rate = 0.001
+hidden_state_size_param = 40
+input_size_param = 1
 
 
 class LSTMAE(nn.Module):
-    def __init__(self, input_size, hidden_layer, output_size, sequence_size):
+    def __init__(self, input_size, hidden_state_size, output_size, sequence_size):
         super().__init__()
         self.sequence_size = sequence_size
-        self.lstm_enc = nn.LSTM(input_size, hidden_layer, batch_first=True)
-        self.lstm_dec = nn.LSTM(hidden_layer, hidden_layer, batch_first=True)
-        self.fc = nn.Linear(hidden_layer, output_size)
+        self.lstm_enc = nn.LSTM(input_size, hidden_state_size, batch_first=True)
+        self.lstm_dec = nn.LSTM(hidden_state_size, hidden_state_size, batch_first=True)
+        self.fc = nn.Linear(hidden_state_size, output_size)
         # self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     def forward(self, x):
@@ -43,7 +46,6 @@ class LSTMAE(nn.Module):
 
 
 def train(lstmae):
-
     criterion = nn.MSELoss()
     optimizer = optim.Adam(lstmae.parameters(), lr=0.001)
 
@@ -70,6 +72,7 @@ def train(lstmae):
             # print("first_3", tensor_first_3.shape)
             loss = criterion(outputs, train_data)
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(lstmae.parameters(), grad_clip)
             optimizer.step()
 
             # print statistics
@@ -87,8 +90,8 @@ def train(lstmae):
 
 
 def task_3_1():
-    lstmae = LSTMAE(1, 40, 1, t)
-    # train(lstmae)
+    lstmae = LSTMAE(input_size_param, hidden_state_size_param, input_size_param, sequence_param)
+    train(lstmae)
 
     test_data = synthetic_data_gen()
     test_loader = torch.utils.data.DataLoader(test_data, batch_size=1, shuffle=True, num_workers=0)
@@ -100,7 +103,10 @@ def task_3_1():
 
     original = signal.flatten().detach().numpy()
     plt.plot(axis, original, label='original signal')
-    plt.suptitle(f'batch size : {batch_size} epoch: {epoch}')
+    plt.suptitle(f'batch size : {batch_size} epoch: {epoch} gradient clipping: {grad_clip}')
+    # plt.suptitle("Signal Value vs Time")
+    plt.xlabel('Time')
+    plt.ylabel('Value')
 
     lstmae.load_state_dict(torch.load(PATH))
 
@@ -109,3 +115,5 @@ def task_3_1():
     plt.legend()
     plt.show()
 
+
+task_3_1()
