@@ -40,9 +40,10 @@ class LSTMAE(nn.Module):
         # print("z", z.shape)
         output_dec, (_, _) = self.lstm_dec(z)
         # print("output_dec", output_dec.shape)
+        last_hidden_states = output_dec[:, -1, :]
         output = self.fc(output_dec)
 
-        return output
+        return output, last_hidden_states
 
 
 def train(lstmae):
@@ -67,7 +68,7 @@ def train(lstmae):
 
             # forward + backward + optimize
             # tensor_first_3 = torch.tensor(first_3)
-            outputs = lstmae(train_data)
+            outputs, _ = lstmae(train_data)
             # print("output", outputs.shape)
             # print("first_3", tensor_first_3.shape)
             loss = criterion(outputs, train_data)
@@ -110,10 +111,11 @@ def task_3_1():
 
     lstmae.load_state_dict(torch.load(PATH))
 
-    reconstructed_signal = lstmae(signal).flatten().detach().numpy()
+    result, _ = lstmae(signal)
+    reconstructed_signal = result.flatten().detach().numpy()
     plt.plot(axis, reconstructed_signal, label='estimated signal')
     plt.legend()
     plt.show()
 
 
-task_3_1()
+# task_3_1()
