@@ -1,5 +1,5 @@
-import numpy as np  # linear algebra
-import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
+import numpy as np
+import pandas as pd
 import matplotlib.dates as mdates
 import torch
 import torch.nn as nn
@@ -28,13 +28,11 @@ raw_data = torch.FloatTensor(reshaped_data)
 # Normalization of the data
 min_val = raw_data.min(1, keepdim=True)[0]
 max_val = raw_data.max(1, keepdim=True)[0]
-data = (raw_data - min_val)/max_val
+data = (raw_data - min_val) / max_val
 
 # train set 80%, test set 20%
-# train_set, test_set = torch.utils.data.random_split(data, [382, 95])
 train_set = data[:-95, :, :]
 test_set = data[382:, :, :]
-
 
 loader = torch.utils.data.DataLoader(dataset=train_set,
                                      batch_size=batch_size,
@@ -74,20 +72,15 @@ def train_predict(lstmae_predictor):
         j = 0
         for i, train_data in enumerate(loader, 0):
             j = i
-            # print("data shape", data.shape)
-            # print("data", data)
 
             # zero the parameter gradients
             optimizer.zero_grad()
 
-            # forward + backward + optimize
-            # tensor_first_3 = torch.tensor(first_3)
             x_t = train_data[:, :-1, :]
             y_t = train_data[:, 1:, :]
 
             reconstructed, prediction = lstmae_predictor(x_t)
-            # print("output", outputs.shape)
-            # print("first_3", tensor_first_3.shape)
+
             reconstruction_loss = reconstruct_criterion(reconstructed, x_t)
             prediction_loss = prediction_criterion(prediction, y_t)
             loss = prediction_loss + reconstruction_loss
@@ -96,14 +89,13 @@ def train_predict(lstmae_predictor):
             torch.nn.utils.clip_grad_norm_(lstmae_predictor.parameters(), grad_clip)
             optimizer.step()
 
-            # print statistics
             curr_loss = loss.item()
             running_loss += curr_loss
 
             reconstruction_epoch_loss += reconstruction_loss.item()
             prediction_epoch_loss += prediction_loss.item()
 
-
+            # print statistics
             if i % 20 == 19:  # print every 20 mini-batches
                 print('[%d, %5d] loss: %.6f' %
                       (curr_epoch + 1, i + 1, running_loss / 20))
@@ -119,7 +111,6 @@ def train_predict(lstmae_predictor):
     print(prediction_losses)
     print(iterations)
 
-    # loss vs. epochs
     plt.plot(iterations, reconstruction_losses)
     plt.suptitle('Reconstruction Losses vs. Epochs')
     plt.xlabel('Epochs')
@@ -127,7 +118,6 @@ def train_predict(lstmae_predictor):
     plt.legend()
     plt.show()
 
-    # accuracy vs. epochs
     plt.plot(iterations, prediction_losses)
     plt.suptitle('Prediction Losses vs. Epochs')
     plt.xlabel('Epochs')
@@ -193,13 +183,11 @@ def task_3_3_4():
     _, multi_step_predicted_stock = predict_lstmae(first_10)
     multi_step_predicted_stock = multi_step_predicted_stock.flatten().detach().numpy()
     for i in range(1, 9):
-        half_stock = one_stock[:, i:i+10, :]
+        half_stock = one_stock[:, i:i + 10, :]
         _, temp_prediction = predict_lstmae(half_stock)
         predicted_last = temp_prediction[:, -1, :]
         predicted_last = predicted_last[:, None, :]
         multi_step_predicted_stock = np.append(multi_step_predicted_stock, predicted_last.flatten().detach().numpy())
-
-    # multi_step_predicted_stock = multi_step_predicted_stock.flatten().detach().numpy()
 
     plt.plot(predicted_axis, predicted_stock, label='one-step-prediction')
     plt.plot(predicted_axis, multi_step_predicted_stock, label='multi-step-prediction')
@@ -221,17 +209,11 @@ def train(lstmae):
         running_loss = 0.0
 
         for i, train_data in enumerate(loader, 0):
-            # print("data shape", data.shape)
-            # print("data", data)
 
             # zero the parameter gradients
             optimizer.zero_grad()
 
-            # forward + backward + optimize
-            # tensor_first_3 = torch.tensor(first_3)
             outputs, _ = lstmae(train_data)
-            # print("output", outputs.shape)
-            # print("first_3", tensor_first_3.shape)
             loss = criterion(outputs, train_data)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(lstmae.parameters(), grad_clip)
@@ -255,9 +237,7 @@ def task_3_3_2():
     lstmae = LSTMAE(input_size_param, hidden_state_size_param, input_size_param)
     # train(lstmae)
 
-    test_data = data
-    test_data = test_set
-    test_loader = torch.utils.data.DataLoader(test_data, batch_size=1, shuffle=True, num_workers=0)
+    test_loader = torch.utils.data.DataLoader(test_set, batch_size=1, shuffle=True, num_workers=0)
 
     dataiter = iter(test_loader)
     stock = dataiter.next()
@@ -283,8 +263,6 @@ def task_3_3_2():
 def PrintGoogleAndAmazonMaximums():
     google = df_stocks_high['GOOGL'].values
     amzn = df_stocks_high['AMZN'].values
-    date = df_stocks_high.index
-    axis = [i for i in range(1007)]
 
     fig, ax1 = plt.subplots()
     plt.plot(df.index, google, label='Google')
@@ -299,5 +277,6 @@ def PrintGoogleAndAmazonMaximums():
 
 
 # PrintGoogleAndAmazonMaximums()
-task_3_3_4()
 # task_3_3_2()
+# task_3_3_3()
+task_3_3_4()

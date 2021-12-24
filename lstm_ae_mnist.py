@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import matplotlib.pyplot as plt
-import torchvision
-import torchvision.transforms as transforms
 
 from lstm_ae_toy import LSTMAE
 from mnist_loader import MnistLoader
@@ -32,17 +30,14 @@ test_loader = loader.test_loader
 
 
 def accuracy_calculator(classifier_lstmae, to_flatten=False):
-
     with torch.no_grad():
         n_correct = 0
         n_samples = 0
         for images, labels in test_loader:
             images = images.reshape(-1, sequence_length, input_size_param)
-            # labels = labels.to(device)
             if to_flatten:
                 images = torch.flatten(images, start_dim=1)[:, :, None]
             _, outputs = classifier_lstmae(images)
-            # max returns (value ,index)
             _, predicted = torch.max(outputs.data, 1)
             n_samples += labels.size(0)
             n_correct += (predicted == labels).sum().item()
@@ -75,7 +70,7 @@ def train(reconstruct_lstme):
         for i, train_data in enumerate(train_loader, 0):
 
             inputs, labels = train_data
-            inputs = inputs.squeeze()  # [2, 1, 3, 5] -> [2, 3, 5]
+            inputs = inputs.squeeze()
 
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -104,7 +99,7 @@ def train_classify(classify_lstme, to_flatten=False):
     criterion1 = nn.MSELoss()
     criterion2 = nn.CrossEntropyLoss()
     optimizer = optim.Adam(classify_lstme.parameters(), lr=0.001)
-    losses =[]
+    losses = []
     iterations = []
     accuracy = []
     for curr_epoch in range(epoch):  # loop over the dataset multiple times
@@ -115,10 +110,9 @@ def train_classify(classify_lstme, to_flatten=False):
         for i, train_data in enumerate(train_loader, 0):
             j = i
             inputs, labels = train_data
-            inputs = inputs.squeeze()  # [2, 1, 3, 5] -> [2, 3, 5]
+            inputs = inputs.squeeze()
             if to_flatten:
                 inputs = torch.flatten(inputs, start_dim=1)[:, :, None]
-
 
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -163,9 +157,6 @@ def train_classify(classify_lstme, to_flatten=False):
     plt.ylabel('Accuracy')
     plt.legend()
     plt.show()
-
-
-
 
     # torch.save(classify_lstme.state_dict(), PATH_2)
     print('Finished Training, network saved')
@@ -252,8 +243,6 @@ def task_3_2_3():
         plt.show()
 
 
-
-# task_3_2_2()
-# accuracy_calculator()
 # task_3_2_1()
+# task_3_2_2()
 task_3_2_3()

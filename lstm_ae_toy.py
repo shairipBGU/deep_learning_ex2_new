@@ -8,7 +8,6 @@ from synthetic_data_generator import synthetic_data_gen
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 PATH = './lstm_ae_net.pth'
-sequence_param = 50
 batch_size = 30
 epoch = 50
 grad_clip = 1
@@ -24,23 +23,15 @@ class LSTMAE(nn.Module):
         self.lstm_enc = nn.LSTM(input_size, hidden_state_size, batch_first=True)
         self.lstm_dec = nn.LSTM(hidden_state_size, hidden_state_size, batch_first=True)
         self.fc = nn.Linear(hidden_state_size, output_size)
-        # self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     def forward(self, x):
-        # print("x", x.shape)
         output_enc, (_, _) = self.lstm_enc(x)
-        # print("output_enc", output_enc.shape)
         _, sequence_size, k = output_enc.size()
-        # print("k", k)
         to_repeat = output_enc[:, -1, :]
-        # print("to_repeat", to_repeat.shape)
         to_repeat = to_repeat[:, None, :]
-        # print("to_repeat reshape", to_repeat.shape)
         z = to_repeat.repeat(1, sequence_size, 1)
-        # print("z", z.shape)
         last_hidden_states = z
         output_dec, (_, _) = self.lstm_dec(z)
-        # print("output_dec", output_dec.shape)
         if not self.last_enc_hidden_state:
             last_hidden_states = output_dec[:, -1, :]
 
@@ -63,17 +54,12 @@ def train(lstmae):
         running_loss = 0.0
 
         for i, train_data in enumerate(train_loader, 0):
-            # print("data shape", data.shape)
-            # print("data", data)
 
             # zero the parameter gradients
             optimizer.zero_grad()
 
-            # forward + backward + optimize
-            # tensor_first_3 = torch.tensor(first_3)
             outputs, _ = lstmae(train_data)
-            # print("output", outputs.shape)
-            # print("first_3", tensor_first_3.shape)
+
             loss = criterion(outputs, train_data)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(lstmae.parameters(), grad_clip)
@@ -93,8 +79,8 @@ def train(lstmae):
     print('Finished Training, network saved')
 
 
-def task_3_1():
-    lstmae = LSTMAE(input_size_param, hidden_state_size_param, input_size_param, sequence_param)
+def task_3_2():
+    lstmae = LSTMAE(input_size_param, hidden_state_size_param, input_size_param)
     train(lstmae)
 
     test_data = synthetic_data_gen()
@@ -108,7 +94,6 @@ def task_3_1():
     original = signal.flatten().detach().numpy()
     plt.plot(axis, original, label='original signal')
     plt.suptitle(f'batch size : {batch_size} epoch: {epoch} gradient clipping: {grad_clip}')
-    # plt.suptitle("Signal Value vs Time")
     plt.xlabel('Time')
     plt.ylabel('Value')
 
@@ -120,4 +105,4 @@ def task_3_1():
     plt.legend()
     plt.show()
 
-# task_3_1()
+# task_3_2()
