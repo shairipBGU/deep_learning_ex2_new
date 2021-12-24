@@ -44,9 +44,9 @@ signal = data_iter.next()
 
 
 class LSTMAE_PREDICTOR(nn.Module):
-    def __init__(self, input_size, hidden_state_size, output_size, sequence_size):
+    def __init__(self, input_size, hidden_state_size, output_size):
         super().__init__()
-        self.lstmae = LSTMAE(input_size, hidden_state_size, output_size, sequence_size, True)
+        self.lstmae = LSTMAE(input_size, hidden_state_size, output_size, True)
         self.lstm_dec_predictor = nn.LSTM(hidden_state_size, hidden_state_size, batch_first=True)
         self.fc_predictor = nn.Linear(hidden_state_size, output_size)
 
@@ -68,6 +68,7 @@ def train_predict(lstmae_predictor):
     prediction_epoch_loss = 0.0
     iterations = []
     for curr_epoch in range(epoch):  # loop over the dataset multiple times
+        iterations.append(curr_epoch)
 
         running_loss = 0.0
         j = 0
@@ -103,19 +104,40 @@ def train_predict(lstmae_predictor):
             prediction_epoch_loss += prediction_loss.item()
 
 
-            iterations.append((curr_epoch + i))
             if i % 20 == 19:  # print every 20 mini-batches
                 print('[%d, %5d] loss: %.6f' %
                       (curr_epoch + 1, i + 1, running_loss / 20))
                 running_loss = 0.0
+                reconstruction_epoch_loss = 0.0
+                prediction_epoch_loss = 0.0
         reconstruction_losses.append(reconstruction_epoch_loss / j)
         prediction_losses.append(prediction_epoch_loss / j)
     torch.save(lstmae_predictor.state_dict(), PATH)
     print('Finished Training, network saved')
 
+    print(reconstruction_losses)
+    print(prediction_losses)
+    print(iterations)
+
+    # loss vs. epochs
+    plt.plot(iterations, reconstruction_losses)
+    plt.suptitle('Reconstruction Losses vs. Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.show()
+
+    # accuracy vs. epochs
+    plt.plot(iterations, prediction_losses)
+    plt.suptitle('Prediction Losses vs. Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.show()
+
 
 def task_3_3_3():
-    predict_lstmae = LSTMAE_PREDICTOR(input_size_param, hidden_state_size_param, input_size_param, sequence_param - 1)
+    predict_lstmae = LSTMAE_PREDICTOR(input_size_param, hidden_state_size_param, input_size_param)
     train_predict(predict_lstmae)
 
     test_loader = torch.utils.data.DataLoader(test_set, batch_size=1, shuffle=True, num_workers=0)
@@ -138,6 +160,49 @@ def task_3_3_3():
     predicted_axis = df.index[53:1007]
     plt.plot(reconstructed_axis, reconstructed_stock, label='reconstructed stock')
     plt.plot(predicted_axis, predicted_stock, label='predicted stock')
+    monthyearFmt = mdates.DateFormatter('%Y %B')
+    ax1.xaxis.set_major_formatter(monthyearFmt)
+    _ = plt.xticks(rotation=90)
+    plt.legend()
+    plt.show()
+
+
+def task_3_3_4():
+    predict_lstmae = LSTMAE_PREDICTOR(input_size_param, hidden_state_size_param, input_size_param)
+    # train_predict(predict_lstmae)
+
+    test_loader = torch.utils.data.DataLoader(test_set, batch_size=1, shuffle=True, num_workers=0)
+
+    dataiter = iter(test_loader)
+    stock = dataiter.next()
+
+    fig, ax1 = plt.subplots()
+    original = stock.flatten().detach().numpy()
+    plt.plot(df.index, original, label='original stock')
+    plt.suptitle('Original Vs. Reconstructed Vs. Predicted Stock')
+    plt.ylabel('Price')
+
+    predict_lstmae.load_state_dict(torch.load(PATH))
+
+    one_stock = stock[:, :-1, :]
+    reconstructed, prediction = predict_lstmae(one_stock)
+    predicted_stock = prediction.flatten().detach().numpy()
+    predicted_axis = df.index[53:1007]
+
+    first_10 = one_stock[:, :10, :]
+    _, multi_step_predicted_stock = predict_lstmae(first_10)
+    multi_step_predicted_stock = multi_step_predicted_stock.flatten().detach().numpy()
+    for i in range(1, 9):
+        half_stock = one_stock[:, i:i+10, :]
+        _, temp_prediction = predict_lstmae(half_stock)
+        predicted_last = temp_prediction[:, -1, :]
+        predicted_last = predicted_last[:, None, :]
+        multi_step_predicted_stock = np.append(multi_step_predicted_stock, predicted_last.flatten().detach().numpy())
+
+    # multi_step_predicted_stock = multi_step_predicted_stock.flatten().detach().numpy()
+
+    plt.plot(predicted_axis, predicted_stock, label='one-step-prediction')
+    plt.plot(predicted_axis, multi_step_predicted_stock, label='multi-step-prediction')
     monthyearFmt = mdates.DateFormatter('%Y %B')
     ax1.xaxis.set_major_formatter(monthyearFmt)
     _ = plt.xticks(rotation=90)
@@ -187,7 +252,7 @@ def train(lstmae):
 
 
 def task_3_3_2():
-    lstmae = LSTMAE(input_size_param, hidden_state_size_param, input_size_param, sequence_param)
+    lstmae = LSTMAE(input_size_param, hidden_state_size_param, input_size_param)
     # train(lstmae)
 
     test_data = data
@@ -234,5 +299,5 @@ def PrintGoogleAndAmazonMaximums():
 
 
 # PrintGoogleAndAmazonMaximums()
-# task_3_3_3()
-task_3_3_2()
+task_3_3_4()
+# task_3_3_2()

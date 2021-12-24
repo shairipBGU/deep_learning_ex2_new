@@ -18,10 +18,9 @@ input_size_param = 1
 
 
 class LSTMAE(nn.Module):
-    def __init__(self, input_size, hidden_state_size, output_size, sequence_size, last_enc_hidden_state=False):
+    def __init__(self, input_size, hidden_state_size, output_size, last_enc_hidden_state=False):
         super().__init__()
         self.last_enc_hidden_state = last_enc_hidden_state
-        self.sequence_size = sequence_size
         self.lstm_enc = nn.LSTM(input_size, hidden_state_size, batch_first=True)
         self.lstm_dec = nn.LSTM(hidden_state_size, hidden_state_size, batch_first=True)
         self.fc = nn.Linear(hidden_state_size, output_size)
@@ -31,13 +30,13 @@ class LSTMAE(nn.Module):
         # print("x", x.shape)
         output_enc, (_, _) = self.lstm_enc(x)
         # print("output_enc", output_enc.shape)
-        _, _, k = output_enc.size()
+        _, sequence_size, k = output_enc.size()
         # print("k", k)
         to_repeat = output_enc[:, -1, :]
         # print("to_repeat", to_repeat.shape)
         to_repeat = to_repeat[:, None, :]
         # print("to_repeat reshape", to_repeat.shape)
-        z = to_repeat.repeat(1, self.sequence_size, 1)
+        z = to_repeat.repeat(1, sequence_size, 1)
         # print("z", z.shape)
         last_hidden_states = z
         output_dec, (_, _) = self.lstm_dec(z)
